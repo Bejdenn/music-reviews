@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { arrayRemove, getDocs, getFirestore, query, snapshotEqual, Timestamp, where, type DocumentData, type FirestoreDataConverter, type WithFieldValue } from "firebase/firestore";
-import { doc, setDoc, collection } from "firebase/firestore"
+import { getDocs, getFirestore, Timestamp, type FirestoreDataConverter, type WithFieldValue } from "firebase/firestore";
+import { collection } from "firebase/firestore"
 
 const firebaseConfig = {
   apiKey: "AIzaSyAiATvIjGzb1rikJsCmJyoz_GxzVaDUkZY",
