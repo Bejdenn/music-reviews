@@ -3,13 +3,14 @@ import type { Album } from "./albums.ts";
 import { albums } from "./albums.ts";
 import "./style.css";
 
-type sortBy = "Title" | "Artist" | "Release";
+type sortBy = "Title" | "Artist" | "Release" | "Rating";
 
 type AlbumSortFn = Parameters<typeof albums.sort>[0]
 
 const sortByArtist: AlbumSortFn = (a, b) => a.artists[0].localeCompare(b.artists[0])
 const sortByTitle: AlbumSortFn = (a, b) => a.title.localeCompare(b.title)
 const sortByDate: AlbumSortFn = (a, b) => b.releaseDate.getTime() - a.releaseDate.getTime()
+const sortByRating: AlbumSortFn = (a, b) => (b.rating || 0) - (a.rating || 0)
 
 function AlbumRow() {
   return {
@@ -51,6 +52,7 @@ m.route(document.body, "/music", {
               m("option", "Title"),
               m("option", "Artist"),
               m("option", "Release"),
+              m("option", "Rating")
             ]),
           ]),
         ]),
@@ -61,7 +63,8 @@ m.route(document.body, "/music", {
               sort === "Title" ? sortByTitle
                 : sort === "Artist" ? (sortByArtist || sortByDate)
                   : sort === "Release" ? sortByDate
-                    : () => 0).map((alb) => m(AlbumRow, alb)),
+                    : sort === "Rating" ? (sortByRating || sortByDate)
+                      : () => 0).map((alb) => m(AlbumRow, alb)),
           ]),
         ),
       ]);
