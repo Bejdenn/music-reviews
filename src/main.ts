@@ -59,11 +59,11 @@ m.route(document.body, "/music", {
         m(
           "table",
           m("tbody", [
-            albums.sort(
+            [...albums].sort(
               sort === "Title" ? sortByTitle
-                : sort === "Artist" ? (sortByArtist || sortByDate)
+                : sort === "Artist" ? (a, b) => (sortByArtist(a, b) || sortByDate(a, b))
                   : sort === "Release" ? sortByDate
-                    : sort === "Rating" ? (sortByRating || sortByDate)
+                    : sort === "Rating" ? (a, b) => (sortByRating(a, b) || sortByDate(a, b))
                       : () => 0).map((alb) => m(AlbumRow, alb)),
           ]),
         ),
