@@ -46,7 +46,7 @@ m.route(document.body, "/music", {
             "Sort by",
             m("select", {
               onchange: (e: any) => {
-                window.location.href = `/#!/music?sort=${e.target.value}`
+                m.route.set(`/music?sort=${e.target.value}`)
               }, value: sort
             }, [
               m("option", "Title"),
