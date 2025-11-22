@@ -131,6 +131,23 @@ const Page: Component<{ sort?: string }> = {
 
 let albums: Album[];
 
+const cacheKey = "album_cache"
+type AlbumCache = {
+  cachedAt: Date;
+  albums: Album[];
+}
+
+// Source: https://cwestblog.com/2022/02/07/json-parse-reviver-for-dates/
+function dateReviver(_key: string, value: any) {
+  if ('string' === typeof value && /^\d{4}-[01]\d-[0-3]\dT[012]\d(?::[0-6]\d){2}\.\d{3}Z$/.test(value)) {
+    var date = new Date(value);
+    if (+date === +date) {
+      return date;
+    }
+  }
+  return value;
+}
+
 m.route(document.body, "/music", {
   "/music": {
     onmatch: async function () {
@@ -138,6 +155,27 @@ m.route(document.body, "/music", {
       // to the URL. In Safari, for some reason, it runs a second time, even when the route does NOT change, as
       // with clicking the button to show a random album.
       if (albums) return
+
+      const now = new Date()
+
+      const albumCache = localStorage.getItem(cacheKey)
+      if (albumCache) {
+        let cache: AlbumCache;
+        try {
+          cache = JSON.parse(albumCache, dateReviver)
+          if (
+            cache.cachedAt.getFullYear() === now.getFullYear() &&
+            cache.cachedAt.getMonth() === now.getMonth() &&
+            cache.cachedAt.getDate() === now.getDate()
+          ) {
+            // cached date is sufficient
+            albums = cache.albums
+            return;
+          }
+        } catch (error) {
+          console.log("Error while parsing cached values", error)
+        }
+      }
 
       type AlbumDbType = {
         title: string;
@@ -160,6 +198,9 @@ m.route(document.body, "/music", {
       }))
 
       albums = querySnapshot.docs.map(doc => ({ ...doc.data(), id: `id-${doc.id}` }))
+
+      const cache: AlbumCache = { albums, cachedAt: now }
+      localStorage.setItem(cacheKey, JSON.stringify(cache))
     },
     render: (vnode) => m(Page, vnode.attrs)
   },
