@@ -55,15 +55,15 @@ function AlbumRow(): Component<Album> {
   return {
     view: function ({ attrs: { id, rating, artists, title, releaseDate, highlight } }) {
       let classes: string[] = [];
-      if (!rating) { classes.push("muted") };
-      if (highlight) { classes.push("accent"); };
+      if (rating) { classes.push("has-background-white-ter") };
+      if (highlight) { classes.push("is-selected"); };
 
       return m("tr", { class: classes.join(" "), id, key: id },
         [
           m("td[align=right]", Stars(rating)),
           m("td", artists.join(", ")),
           m("td", m("i", title)),
-          m("td[align=center]", releaseDate?.toLocaleDateString(undefined, { month: "short", year: "numeric" })),
+          m("td[align=center][style=white-space:nowrap]", releaseDate?.toLocaleDateString(undefined, { month: "short", year: "numeric" })),
         ]);
     },
   };
@@ -73,52 +73,58 @@ const Page: Component<{ sort?: string }> = {
   view: function ({ attrs: { sort } }) {
     if (!sort) sort = "Release"
 
-    return m("main.smaller", [
-      m("h1", "My Music Reviews"),
-      m("form", [
-        m("label", [
-          "Sort by",
-          m("select", {
-            onchange: (e: any) => {
-              m.route.set('/music', { sort: e.target.value });
-            }, value: sort
-          }, [
-            m("option", "Title"),
-            m("option", "Artist"),
-            m("option", "Release"),
-            m("option", "Rating")
+    return m("section.section",
+      m("main.container", [
+        m("h1.title.is-1", "My Music Reviews"),
+        m("form", m("fieldset", [
+          m(".field", [
+            m("label", "Sort by"),
+            m(".control", m(".select",
+              m("select", {
+                onchange: (e: any) => {
+                  m.route.set('/music', { sort: e.target.value });
+                }, value: sort
+              }, [
+                m("option", "Title"),
+                m("option", "Artist"),
+                m("option", "Release"),
+                m("option", "Rating")
+              ]))
+            ),
           ]),
-        ]),
-        m("button", {
-          onclick: function () {
-            let album = albums.find(album => album.highlight);
-            if (album) { album.highlight = !album.highlight; }
+          m(".field",
+            m("button.button.is-light", {
+              onclick: function () {
+                let album = albums.find(album => album.highlight);
+                if (album) { album.highlight = !album.highlight; }
 
-            const id = albums.filter(album => !!!album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
-            album = albums.find(album => album.id === id);
-            if (!album) return;
+                const id = albums.filter(album => !!!album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
+                album = albums.find(album => album.id === id);
+                if (!album) return;
 
-            album.highlight = true;
+                album.highlight = true;
 
-            albums[albums.findIndex(album => album.id === id)] = album;
+                albums[albums.findIndex(album => album.id === id)] = album;
 
-            const element = document.querySelector(`#${id}`);
-            element?.scrollIntoView();
-          }
-        }, "Go to random unrated album")
-      ]),
-      m(
-        "table",
-        m("tbody", [
-          [...albums].sort(
-            sort === "Title" ? sortByTitle
-              : sort === "Artist" ? (a, b) => (sortByArtist(a, b) || sortByDate(a, b))
-                : sort === "Release" ? sortByDate
-                  : sort === "Rating" ? (a, b) => (sortByRating(a, b) || sortByDate(a, b))
-                    : () => 0).map((alb) => m(AlbumRow, alb)),
-        ])
-      ),
-    ]);
+                const element = document.querySelector(`#${id}`);
+                element?.scrollIntoView();
+              }
+            }, "Go to random unrated album"
+            ))
+        ])),
+        m(".table-container[style=padding-top:1em]",
+          m("table.table",
+            m("tbody", [
+              [...albums].sort(
+                sort === "Title" ? sortByTitle
+                  : sort === "Artist" ? (a, b) => (sortByArtist(a, b) || sortByDate(a, b))
+                    : sort === "Release" ? sortByDate
+                      : sort === "Rating" ? (a, b) => (sortByRating(a, b) || sortByDate(a, b))
+                        : () => 0).map((alb) => m(AlbumRow, alb)),
+            ])
+          )),
+      ])
+    );
   }
 
 };
