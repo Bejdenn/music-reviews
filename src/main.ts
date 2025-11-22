@@ -109,7 +109,12 @@ const Page: Component<{ sort?: string }> = {
                 const element = document.querySelector(`#${id}`);
                 element?.scrollIntoView();
               }
-            }, "Go to random unrated album"
+            }, [
+              m("span.icon",
+                m("i.fa-duotone.fa-solid.fa-shuffle")
+              ),
+              m("span", "Go to random unrated album"),
+            ]
             ))
         ])),
         m(".table-container[style=padding-top:1em]",
