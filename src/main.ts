@@ -55,7 +55,7 @@ function AlbumRow(): Component<Album> {
   return {
     view: function ({ attrs: { id, rating, artists, title, releaseDate, highlight } }) {
       let classes: string[] = [];
-      if (rating) { classes.push("has-background-white-ter") };
+      if (rating) { classes.push("is-light") };
       if (highlight) { classes.push("is-selected"); };
 
       return m("tr", { class: classes.join(" "), id, key: id },
@@ -76,48 +76,57 @@ const Page: Component<{ sort?: string }> = {
     return m("section.section",
       m("main.container", [
         m("h1.title.is-1", "My Music Reviews"),
-        m("form", m("fieldset", [
-          m(".field", [
-            m("label", "Sort by"),
-            m(".control", m(".select",
-              m("select", {
-                onchange: (e: any) => {
-                  m.route.set('/music', { sort: e.target.value });
-                }, value: sort
-              }, [
-                m("option", "Title"),
-                m("option", "Artist"),
-                m("option", "Release"),
-                m("option", "Rating")
-              ]))
-            ),
-          ]),
-          m(".field",
-            m("button.button.is-light", {
-              onclick: function () {
-                let album = albums.find(album => album.highlight);
-                if (album) { album.highlight = !album.highlight; }
-
-                const id = albums.filter(album => !!!album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
-                album = albums.find(album => album.id === id);
-                if (!album) return;
-
-                album.highlight = true;
-
-                albums[albums.findIndex(album => album.id === id)] = album;
-
-                const element = document.querySelector(`#${id}`);
-                element?.scrollIntoView();
-              }
-            }, [
-              m("span.icon",
-                m("i.fa-duotone.fa-solid.fa-shuffle")
+        m(".columns .is-mobile .is-vcentered",
+          m(".column",
+            m(".field", [
+              m("label.label", "Sort by"),
+              m(".field-body",
+                m(".field",
+                  m(".control",
+                    m(".select",
+                      m("select", {
+                        onchange: (e: any) => {
+                          m.route.set('/music', { sort: e.target.value });
+                        }, value: sort
+                      }, [
+                        m("option", "Title"),
+                        m("option", "Artist"),
+                        m("option", "Release"),
+                        m("option", "Rating")
+                      ]))
+                  )
+                )
               ),
-              m("span", "Go to random unrated album"),
-            ]
-            ))
-        ])),
-        m(".table-container[style=padding-top:1em]",
+            ]),
+          ),
+          m(".column .is-narrow",
+            m(".buttons .has-addons",
+              m("button.button.is-light", {
+                onclick: function () {
+                  let album = albums.find(album => album.highlight);
+                  if (album) { album.highlight = !album.highlight; }
+
+                  const id = albums.filter(album => !!!album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
+                  album = albums.find(album => album.id === id);
+                  if (!album) return;
+
+                  album.highlight = true;
+
+                  albums[albums.findIndex(album => album.id === id)] = album;
+
+                  const element = document.querySelector(`#${id}`);
+                  element?.scrollIntoView();
+                }
+              }, [
+                m("span.icon",
+                  m("i.fa-duotone.fa-solid.fa-shuffle")
+                ),
+              ]
+              )
+            )
+          )
+        ),
+        m(".table-container",
           m("table.table",
             m("tbody", [
               [...albums].sort(
