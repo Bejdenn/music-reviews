@@ -55,7 +55,7 @@ function AlbumRow(): Component<Album> {
   return {
     view: function ({ attrs: { id, rating, artists, title, releaseDate, highlight } }) {
       let classes: string[] = [];
-      if (rating) { classes.push("is-light") };
+      if (rating) { classes.push("is-dark") };
       if (highlight) { classes.push("is-selected"); };
 
       return m("tr", { class: classes.join(" "), id, key: id },
@@ -127,7 +127,7 @@ const Page: Component<{ sort?: string }> = {
           )
         ),
         m(".table-container",
-          m("table.table",
+          m("table.table.is-striped",
             m("tbody", [
               [...albums].sort(
                 sort === "Title" ? sortByTitle
