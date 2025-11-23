@@ -89,7 +89,7 @@ function AlbumCard(): Component<Album> {
         }
       }, [
         m(".card-content", [
-          m(".columns.is-mobile.is-multiline.is-1", [
+          m(".columns.is-mobile.is-multiline.is-1.is-vcentered", [
             m(".column",
               m("p.title.is-6", { class: textClasses.join(" ") }, title)
             ),
