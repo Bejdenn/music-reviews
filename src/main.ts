@@ -1,5 +1,5 @@
 import m, { type Component } from "mithril";
-import { collection, connectFirestoreEmulator, getDocs, getFirestore, Timestamp, type WithFieldValue } from "firebase/firestore";
+import { collection, getDocs, getFirestore, Timestamp, type WithFieldValue } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 
 import "./style.css"
@@ -14,7 +14,6 @@ const app = initializeApp({
 });
 
 const db = getFirestore(app);
-if (import.meta.env.DEV) connectFirestoreEmulator(db, '127.0.0.1', 8089);
 
 type Album = {
   id?: string;
