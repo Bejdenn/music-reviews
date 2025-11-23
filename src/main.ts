@@ -72,8 +72,12 @@ function AlbumCard(): Component<Album> {
   return {
     view: function ({ attrs: { id, title, rating, releaseDate, artists, highlight } }) {
       let classes: string[] = [];
-      if (rating) { classes.push("is-dark") };
+      if (rating) { classes.push("has-background-grey-darker") };
       if (highlight) { classes.push("has-background-primary"); };
+
+      let textClasses: string[] = [];
+      if (rating) { textClasses.push("has-text-white") }
+      if (highlight) { textClasses.push("has-text-black") }
 
       return m(".card", {
         id: id,
@@ -87,13 +91,13 @@ function AlbumCard(): Component<Album> {
         m(".card-content", [
           m(".columns.is-mobile.is-multiline.is-1", [
             m(".column",
-              m("p.title.is-6", { class: highlight ? "has-text-black" : "" }, title)
+              m("p.title.is-6", { class: textClasses.join(" ") }, title)
             ),
             !!rating && m(".column.is-narrow",
-              m("span.title.is-6", Stars(rating))
+              m("span.title.is-6", { class: textClasses.join(" ") }, Stars(rating))
             ),
             m(".column.is-12",
-              m("p.subtitle.is-6", { class: highlight ? "has-text-black" : "" }, artists.join(", ") + " • " + releaseDate.toLocaleDateString(undefined, { month: "short", year: "numeric" }))
+              m("p.subtitle.is-6", { class: textClasses.join(" ") }, artists.join(", ") + " • " + releaseDate.toLocaleDateString(undefined, { month: "short", year: "numeric" }))
             ),
           ]),
         ])
