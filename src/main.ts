@@ -68,9 +68,59 @@ function AlbumRow(): Component<Album> {
   };
 }
 
+function AlbumCard(): Component<Album> {
+  return {
+    view: function ({ attrs: { id, title, rating, releaseDate, artists, highlight } }) {
+      let classes: string[] = [];
+      if (rating) { classes.push("is-dark") };
+      if (highlight) { classes.push("has-background-primary"); };
+
+      return m(".card", {
+        id: id,
+        key: id,
+        class: classes.join(" "),
+        style: {
+          boxShadow: "none",
+          border: "1px solid",
+        }
+      }, [
+        m(".card-content", [
+          m(".columns.is-mobile.is-multiline.is-1", [
+            m(".column",
+              m("p.title.is-6", { class: highlight ? "has-text-black" : "" }, title)
+            ),
+            !!rating && m(".column.is-narrow",
+              m("span.title.is-6", Stars(rating))
+            ),
+            m(".column.is-12",
+              m("p.subtitle.is-6", { class: highlight ? "has-text-black" : "" }, artists.join(", ") + " • " + releaseDate.toLocaleDateString(undefined, { month: "short", year: "numeric" }))
+            ),
+          ]),
+        ])
+      ])
+    }
+  };
+}
+
+let isMobile = false;
+let mediaQuery = window.matchMedia("(width <= 768px)")
+if (mediaQuery.matches) {
+  isMobile = mediaQuery.matches
+}
+
+mediaQuery = window.matchMedia("(min-width: 768px)")
+mediaQuery.addEventListener('change', (ev) => { isMobile = !ev.matches; m.redraw() })
+
 const Page: Component<{ sort?: string }> = {
   view: function ({ attrs: { sort } }) {
     if (!sort) sort = "Release"
+
+    const _albums = [...albums].sort(
+      sort === "Title" ? sortByTitle
+        : sort === "Artist" ? (a, b) => (sortByArtist(a, b) || sortByDate(a, b))
+          : sort === "Release" ? sortByDate
+            : sort === "Rating" ? (a, b) => (sortByRating(a, b) || sortByDate(a, b))
+              : () => 0)
 
     return m("section.section",
       m("main.container", [
@@ -119,17 +169,15 @@ const Page: Component<{ sort?: string }> = {
             )
           )
         ),
-        m(".table-container",
+        !isMobile ? m(".table-container",
           m("table.table.is-striped",
             m("tbody", [
-              [...albums].sort(
-                sort === "Title" ? sortByTitle
-                  : sort === "Artist" ? (a, b) => (sortByArtist(a, b) || sortByDate(a, b))
-                    : sort === "Release" ? sortByDate
-                      : sort === "Rating" ? (a, b) => (sortByRating(a, b) || sortByDate(a, b))
-                        : () => 0).map((alb) => m(AlbumRow, alb)),
+              _albums.map((alb) => m(AlbumRow, alb)),
             ])
-          )),
+          )
+        ) :
+          _albums.map((alb) => m(AlbumCard, alb))
+        ,
       ])
     );
   }
