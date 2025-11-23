@@ -79,23 +79,17 @@ const Page: Component<{ sort?: string }> = {
           m(".column",
             m(".field", [
               m("label.label", "Sort by"),
-              m(".field-body",
-                m(".field",
-                  m(".control",
-                    m(".select",
-                      m("select", {
-                        onchange: (e: any) => {
-                          m.route.set('/music', { sort: e.target.value });
-                        }, value: sort
-                      }, [
-                        m("option", "Title"),
-                        m("option", "Artist"),
-                        m("option", "Release"),
-                        m("option", "Rating")
-                      ]))
-                  )
-                )
-              ),
+              m(".select",
+                m("select", {
+                  onchange: (e: any) => {
+                    m.route.set('/music', { sort: e.target.value });
+                  }, value: sort
+                }, [
+                  m("option", "Title"),
+                  m("option", "Artist"),
+                  m("option", "Release"),
+                  m("option", "Rating")
+                ]))
             ]),
           ),
           m(".column .is-narrow",
