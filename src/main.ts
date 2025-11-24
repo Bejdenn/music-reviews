@@ -62,7 +62,7 @@ function AlbumRow(): Component<Album> {
           m("td[align=right]", Stars(rating)),
           m("td", artists.join(", ")),
           m("td", m("i", title)),
-          m("td[align=center][style=white-space:nowrap]", releaseDate?.toLocaleDateString(undefined, { month: "short", year: "numeric" })),
+          m("td[align=right][style=white-space:nowrap]", releaseDate?.toLocaleDateString(undefined, { month: "short", year: "numeric" })),
         ]);
     },
   };
