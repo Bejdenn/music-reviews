@@ -162,7 +162,7 @@ const Page: Component<{ sort?: string }> = {
                   albums[albums.findIndex(album => album.id === id)] = album;
 
                   const element = document.querySelector(`#${id}`);
-                  element?.scrollIntoView();
+                  element?.scrollIntoView({ block: "center" });
                 }
               }, [
                 m("span.icon",
