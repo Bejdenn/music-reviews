@@ -53,7 +53,7 @@ function Stars(n: number | undefined) {
 function AlbumRow(): Component<Album> {
   return {
     view: function ({ attrs: { id, rating, artists, title, releaseDate, highlight } }) {
-      let classes: string[] = [];
+      const classes: string[] = [];
       if (rating) { classes.push("is-dark") };
       if (highlight) { classes.push("is-selected"); };
 
@@ -71,11 +71,11 @@ function AlbumRow(): Component<Album> {
 function AlbumCard(): Component<Album> {
   return {
     view: function ({ attrs: { id, title, rating, releaseDate, artists, highlight } }) {
-      let classes: string[] = [];
+      const classes: string[] = [];
       if (rating) { classes.push("has-background-grey-darker") };
       if (highlight) { classes.push("has-background-primary"); };
 
-      let textClasses: string[] = [];
+      const textClasses: string[] = [];
       if (rating) { textClasses.push("has-text-white") }
       if (highlight) { textClasses.push("has-text-black") }
 
@@ -135,8 +135,8 @@ const Page: Component<{ sort?: string }> = {
               m("label.label", "Sort by"),
               m(".select",
                 m("select", {
-                  onchange: (e: any) => {
-                    m.route.set('/music', { sort: e.target.value });
+                  onchange: (e: Event) => {
+                    m.route.set('/music', { sort: (e.target as HTMLSelectElement).value });
                   }, value: sort
                 }, [
                   m("option", "Title"),
@@ -153,7 +153,7 @@ const Page: Component<{ sort?: string }> = {
                   let album = albums.find(album => album.highlight);
                   if (album) { album.highlight = !album.highlight; }
 
-                  const id = albums.filter(album => !!!album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
+                  const id = albums.filter(album => !album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
                   album = albums.find(album => album.id === id);
                   if (!album) return;
 
@@ -197,9 +197,9 @@ type AlbumCache = {
 }
 
 // Source: https://cwestblog.com/2022/02/07/json-parse-reviver-for-dates/
-function dateReviver(_key: string, value: any) {
+function dateReviver(_key: string, value: unknown) {
   if ('string' === typeof value && /^\d{4}-[01]\d-[0-3]\dT[012]\d(?::[0-6]\d){2}\.\d{3}Z$/.test(value)) {
-    var date = new Date(value);
+    const date = new Date(value);
     if (+date === +date) {
       return date;
     }
