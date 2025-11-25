@@ -3,7 +3,7 @@ import { collection, getDocs, getFirestore, Timestamp, type WithFieldValue } fro
 import { initializeApp } from "firebase/app";
 
 import "./style.css"
-import Ring from "./ring";
+import { Ring, Cache } from "./utils";
 
 const app = initializeApp({
   apiKey: "AIzaSyAiATvIjGzb1rikJsCmJyoz_GxzVaDUkZY",
@@ -228,23 +228,6 @@ const Page: Component<{ sort: SortBy }> = {
 let albums: Album[];
 let ring: Ring<Album>;
 
-const cacheKey = "album_cache"
-type AlbumCache = {
-  cachedAt: Date;
-  albums: Album[];
-}
-
-// Source: https://cwestblog.com/2022/02/07/json-parse-reviver-for-dates/
-function dateReviver(_key: string, value: unknown) {
-  if ('string' === typeof value && /^\d{4}-[01]\d-[0-3]\dT[012]\d(?::[0-6]\d){2}\.\d{3}Z$/.test(value)) {
-    const date = new Date(value);
-    if (+date === +date) {
-      return date;
-    }
-  }
-  return value;
-}
-
 m.route(document.body, "/music", {
   "/music": {
     onmatch: async function (args: { sort?: string }) {
@@ -255,22 +238,14 @@ m.route(document.body, "/music", {
 
       const now = new Date()
 
-      const albumCache = localStorage.getItem(cacheKey)
-      if (albumCache) {
-        let cache: AlbumCache;
-        try {
-          cache = JSON.parse(albumCache, dateReviver)
-          if (
-            cache.cachedAt.getFullYear() === now.getFullYear() &&
-            cache.cachedAt.getMonth() === now.getMonth() &&
-            cache.cachedAt.getDate() === now.getDate()
-          ) {
-            // cached date is sufficient
-            albums = cache.albums
-          }
-        } catch (error) {
-          console.log("Error while parsing cached values", error)
-        }
+      const albumCache = new Cache<Album[]>("album_cache", ({ cachedAt }) =>
+        cachedAt.getFullYear() === now.getFullYear()
+        && cachedAt.getMonth() === now.getMonth()
+        && cachedAt.getDate() === now.getDate()
+      )
+
+      if (albumCache.isValid()) {
+        albums = albumCache.get().value
       } else {
         type AlbumDbType = {
           title: string;
@@ -294,9 +269,7 @@ m.route(document.body, "/music", {
         }))
 
         albums = querySnapshot.docs.map(doc => ({ ...doc.data(), id: `id-${doc.id}` }))
-
-        const cache: AlbumCache = { albums, cachedAt: now }
-        localStorage.setItem(cacheKey, JSON.stringify(cache))
+        albumCache.set(albums)
       }
 
       const sort = args.sort || "Release"
@@ -305,6 +278,6 @@ m.route(document.body, "/music", {
       ring = new Ring(albums.filter(alb => alb.currentlyListening));
       ring.addListener((element) => { scrollIntoView(element.id) });
     },
-    render: (vnode) => m(Page, vnode.attrs)
+    render: (vnode) => m(Page, { ...vnode.attrs, sort: vnode.attrs.sort || "Release" })
   },
 });
