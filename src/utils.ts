@@ -95,4 +95,30 @@ function dateReviver(_key: string, value: unknown) {
   return value;
 }
 
-export { Ring, Cache };
+class Observed<T = never> {
+  private value: T | undefined;
+  private listeners: ((arg: T) => void)[] = [];
+
+  constructor(value?: T) {
+    this.value = value;
+  }
+
+  get() {
+    return this.value
+  }
+
+  set(value: T) {
+    this.value = value;
+    this.notifyListeners(this.value)
+  }
+
+  addListener(callback: (arg: T) => void) {
+    this.listeners.push(callback)
+  }
+
+  private notifyListeners(element: T) {
+    this.listeners.forEach((listener) => listener(element))
+  }
+}
+
+export { Ring, Cache, Observed };

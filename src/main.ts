@@ -3,7 +3,7 @@ import { collection, getDocs, getFirestore, Timestamp, type WithFieldValue } fro
 import { initializeApp } from "firebase/app";
 
 import "./style.css"
-import { Ring, Cache } from "./utils";
+import { Ring, Cache, Observed } from "./utils";
 
 const app = initializeApp({
   apiKey: "AIzaSyAiATvIjGzb1rikJsCmJyoz_GxzVaDUkZY",
@@ -66,10 +66,10 @@ function MusicNote(): Component<{ id: string }> {
 
 function AlbumRow(): Component<Album> {
   return {
-    view: function ({ attrs: { id, rating, artists, title, releaseDate, highlight, currentlyListening } }) {
+    view: function ({ attrs: { id, rating, artists, title, releaseDate, currentlyListening } }) {
       const classes: string[] = [];
       if (rating) { classes.push("is-dark") };
-      if (highlight) { classes.push("is-selected"); };
+      if (highlighted.get()?.id === id) { classes.push("is-selected"); };
 
       return m("tr", { class: classes.join(" "), id, key: id },
         [
@@ -84,14 +84,14 @@ function AlbumRow(): Component<Album> {
 
 function AlbumCard(): Component<Album> {
   return {
-    view: function ({ attrs: { id, title, rating, releaseDate, artists, highlight, currentlyListening } }) {
+    view: function ({ attrs: { id, title, rating, releaseDate, artists, currentlyListening } }) {
       const classes: string[] = [];
       if (rating) { classes.push("has-background-grey-darker") };
-      if (highlight) { classes.push("has-background-primary"); };
+      if (highlighted.get()?.id === id) { classes.push("has-background-primary"); };
 
       const textClasses: string[] = [];
       if (rating) { textClasses.push("has-text-white") }
-      if (highlight) { textClasses.push("has-text-black") }
+      if (highlighted.get()?.id === id) { textClasses.push("has-text-black") }
 
       return m(".card", {
         id: id,
@@ -177,18 +177,11 @@ const Page: Component<{ sort: SortBy }> = {
             m(".buttons .has-addons",
               m("button.button.is-light", {
                 onclick: function () {
-                  let album = albums.find(album => album.highlight);
-                  if (album) { album.highlight = !album.highlight; }
-
                   const id = albums.filter(album => !album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
-                  album = albums.find(album => album.id === id);
+                  const album = albums.find(album => album.id === id);
                   if (!album) return;
 
-                  album.highlight = true;
-
-                  albums[albums.findIndex(album => album.id === id)] = album;
-
-                  scrollIntoView(id)
+                  highlighted.set(album)
                 }
               }, [
                 m("span.icon",
@@ -227,6 +220,7 @@ const Page: Component<{ sort: SortBy }> = {
 
 let albums: Album[];
 let ring: Ring<Album>;
+let highlighted: Observed<Album>;
 
 m.route(document.body, "/music", {
   "/music": {
@@ -277,6 +271,9 @@ m.route(document.body, "/music", {
 
       ring = new Ring(albums.filter(alb => alb.currentlyListening));
       ring.addListener((element) => { scrollIntoView(element.id) });
+
+      highlighted = new Observed();
+      highlighted.addListener((element) => { scrollIntoView(element.id) });
     },
     render: (vnode) => m(Page, { ...vnode.attrs, sort: vnode.attrs.sort || "Release" })
   },
