@@ -3,6 +3,7 @@ import { collection, getDocs, getFirestore, Timestamp, type WithFieldValue } fro
 import { initializeApp } from "firebase/app";
 
 import "./style.css"
+import { Cache, Observed } from "./utils";
 
 const app = initializeApp({
   apiKey: "AIzaSyAiATvIjGzb1rikJsCmJyoz_GxzVaDUkZY",
@@ -22,6 +23,7 @@ type Album = {
   releaseDate: Date;
   rating?: number;
   highlight?: boolean;
+  currentlyListening?: boolean;
 };
 
 type compareFn = Parameters<typeof albums.sort>[0]
@@ -42,6 +44,10 @@ const sortByRating: compareFn = (a, b) => {
   return (b.rating || 0) - (a.rating || 0);
 }
 
+const sortByCurrentlyListening: compareFn = (a, b) => {
+  return a.currentlyListening === b.currentlyListening ? 0 : a.currentlyListening ? -1 : 1;
+}
+
 function Stars(n: number | undefined) {
   if (!n || n < 0) {
     return null;
@@ -50,16 +56,24 @@ function Stars(n: number | undefined) {
   return "★".repeat(n);
 }
 
+function MusicNote(): Component<{ id: string }> {
+  return {
+    view: function () {
+      return m("span", "♫")
+    }
+  }
+}
+
 function AlbumRow(): Component<Album> {
   return {
-    view: function ({ attrs: { id, rating, artists, title, releaseDate, highlight } }) {
+    view: function ({ attrs: { id, rating, artists, title, releaseDate, currentlyListening } }) {
       const classes: string[] = [];
       if (rating) { classes.push("is-dark") };
-      if (highlight) { classes.push("is-selected"); };
+      if (highlighted.get()?.id === id) { classes.push("is-selected"); };
 
       return m("tr", { class: classes.join(" "), id, key: id },
         [
-          m("td[align=right]", Stars(rating)),
+          m("td[align=right]", rating ? m("span", Stars(rating)) : currentlyListening ? m(MusicNote, { id: id! }) : null),
           m("td", artists.join(", ")),
           m("td", m("i", title)),
           m("td[align=right][style=white-space:nowrap]", releaseDate?.toLocaleDateString(undefined, { month: "short", year: "numeric" })),
@@ -70,14 +84,14 @@ function AlbumRow(): Component<Album> {
 
 function AlbumCard(): Component<Album> {
   return {
-    view: function ({ attrs: { id, title, rating, releaseDate, artists, highlight } }) {
+    view: function ({ attrs: { id, title, rating, releaseDate, artists, currentlyListening } }) {
       const classes: string[] = [];
       if (rating) { classes.push("has-background-grey-darker") };
-      if (highlight) { classes.push("has-background-primary"); };
+      if (highlighted.get()?.id === id) { classes.push("has-background-primary"); };
 
       const textClasses: string[] = [];
       if (rating) { textClasses.push("has-text-white") }
-      if (highlight) { textClasses.push("has-text-black") }
+      if (highlighted.get()?.id === id) { textClasses.push("has-text-black") }
 
       return m(".card", {
         id: id,
@@ -93,8 +107,8 @@ function AlbumCard(): Component<Album> {
             m(".column",
               m("p.title.is-6", { class: textClasses.join(" ") }, title)
             ),
-            !!rating && m(".column.is-narrow",
-              m("span.title.is-6", { class: textClasses.join(" ") }, Stars(rating))
+            m(".column.is-narrow",
+              m("span.title.is-6", { class: textClasses.join(" ") }, rating ? Stars(rating) : currentlyListening ? m(MusicNote, { id: id! }) : null)
             ),
             m(".column.is-12",
               m("p.subtitle.is-6", { class: textClasses.join(" ") }, artists.join(", ") + " • " + releaseDate.toLocaleDateString(undefined, { month: "short", year: "numeric" }))
@@ -115,17 +129,28 @@ if (mediaQuery.matches) {
 mediaQuery = window.matchMedia("(min-width: 768px)")
 mediaQuery.addEventListener('change', (ev) => { isMobile = !ev.matches; m.redraw() })
 
-const Page: Component<{ sort?: string }> = {
-  view: function ({ attrs: { sort } }) {
-    if (!sort) sort = "Release"
+function scrollIntoView(id: string | undefined) {
+  (document.querySelector(`#${id}`))?.scrollIntoView({ block: "center" });
+}
 
-    const _albums = [...albums].sort(
-      sort === "Title" ? sortByTitle
-        : sort === "Artist" ? (a, b) => (sortByArtist(a, b) || sortByDate(a, b))
-          : sort === "Release" ? sortByDate
-            : sort === "Rating" ? (a, b) => (sortByRating(a, b) || sortByDate(a, b))
+type SortBy = "Title" | "Artist" | "Release" | "Rating" | "Listening"
+
+function isSortBy(s: string): s is SortBy {
+  return ["Title", "Artist", "Release", "Rating", "Listening"].includes(s)
+}
+
+const sortAlbums = (albums: Album[], sort: SortBy) => {
+  return albums.sort(
+    sort === "Title" ? sortByTitle
+      : sort === "Artist" ? (a, b) => (sortByArtist(a, b) || sortByDate(a, b))
+        : sort === "Release" ? sortByDate
+          : sort === "Rating" ? (a, b) => (sortByRating(a, b) || sortByDate(a, b))
+            : sort === "Listening" ? (a, b) => (sortByCurrentlyListening(a, b) || sortByDate(a, b))
               : () => 0)
+}
 
+const Page: Component<{ sort: SortBy }> = {
+  view: function ({ attrs: { sort } }) {
     return m("section.section",
       m("main.container", [
         m("h1.title.is-1", "My Music Reviews"),
@@ -136,13 +161,14 @@ const Page: Component<{ sort?: string }> = {
               m(".select",
                 m("select", {
                   onchange: (e: Event) => {
-                    m.route.set('/music', { sort: (e.target as HTMLSelectElement).value });
+                    const sort = (e.target as HTMLSelectElement).value;
+                    if (isSortBy(sort)) albums = sortAlbums(albums, sort);
+
+                    m.route.set('/music', { sort });
                   }, value: sort
                 }, [
-                  m("option", "Title"),
-                  m("option", "Artist"),
-                  m("option", "Release"),
-                  m("option", "Rating")
+                  (["Title", "Artist", "Release", "Rating", "Listening"] satisfies SortBy[])
+                    .map(sb => m("option", sb))
                 ]))
             ]),
           ),
@@ -150,19 +176,11 @@ const Page: Component<{ sort?: string }> = {
             m(".buttons .has-addons",
               m("button.button.is-light", {
                 onclick: function () {
-                  let album = albums.find(album => album.highlight);
-                  if (album) { album.highlight = !album.highlight; }
-
                   const id = albums.filter(album => !album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
-                  album = albums.find(album => album.id === id);
+                  const album = albums.find(album => album.id === id);
                   if (!album) return;
 
-                  album.highlight = true;
-
-                  albums[albums.findIndex(album => album.id === id)] = album;
-
-                  const element = document.querySelector(`#${id}`);
-                  element?.scrollIntoView({ block: "center" });
+                  highlighted.set(album)
                 }
               }, [
                 m("span.icon",
@@ -176,40 +194,23 @@ const Page: Component<{ sort?: string }> = {
         !isMobile ? m(".table-container",
           m("table.table.is-striped",
             m("tbody", [
-              _albums.map((alb) => m(AlbumRow, alb)),
+              albums.map((alb) => m(AlbumRow, alb)),
             ])
           )
         ) :
-          _albums.map((alb) => m(AlbumCard, alb))
-        ,
-      ])
+          albums.map((alb) => m(AlbumCard, alb))
+      ]),
     );
   }
 
 };
 
 let albums: Album[];
-
-const cacheKey = "album_cache"
-type AlbumCache = {
-  cachedAt: Date;
-  albums: Album[];
-}
-
-// Source: https://cwestblog.com/2022/02/07/json-parse-reviver-for-dates/
-function dateReviver(_key: string, value: unknown) {
-  if ('string' === typeof value && /^\d{4}-[01]\d-[0-3]\dT[012]\d(?::[0-6]\d){2}\.\d{3}Z$/.test(value)) {
-    const date = new Date(value);
-    if (+date === +date) {
-      return date;
-    }
-  }
-  return value;
-}
+let highlighted: Observed<Album>;
 
 m.route(document.body, "/music", {
   "/music": {
-    onmatch: async function () {
+    onmatch: async function (args: { sort?: string }) {
       // 'onmatch' runs everytime there is a change in the route, for example when we append the sorting key
       // to the URL. In Safari, for some reason, it runs a second time, even when the route does NOT change, as
       // with clicking the button to show a random album.
@@ -217,50 +218,46 @@ m.route(document.body, "/music", {
 
       const now = new Date()
 
-      const albumCache = localStorage.getItem(cacheKey)
-      if (albumCache) {
-        let cache: AlbumCache;
-        try {
-          cache = JSON.parse(albumCache, dateReviver)
-          if (
-            cache.cachedAt.getFullYear() === now.getFullYear() &&
-            cache.cachedAt.getMonth() === now.getMonth() &&
-            cache.cachedAt.getDate() === now.getDate()
-          ) {
-            // cached date is sufficient
-            albums = cache.albums
-            return;
+      const albumCache = new Cache<Album[]>("album_cache", ({ cachedAt }) =>
+        cachedAt.getFullYear() === now.getFullYear()
+        && cachedAt.getMonth() === now.getMonth()
+        && cachedAt.getDate() === now.getDate()
+      )
+
+      if (albumCache.isValid()) {
+        albums = albumCache.get().value
+      } else {
+        type AlbumDbType = {
+          title: string;
+          artists: string[];
+          rating?: number;
+          releaseDate: Timestamp;
+          currentlyListening?: boolean;
+        };
+
+        const querySnapshot = await getDocs(collection(db, "albums").withConverter<Album, AlbumDbType>({
+          toFirestore: ({ title, artists, rating, releaseDate }: WithFieldValue<Album>) => {
+            return { title, artists, rating, releaseDate: Timestamp.fromDate(releaseDate as Date) };
+          },
+          fromFirestore: (snapshot) => {
+            const { title, artists, releaseDate, rating, currentlyListening } = snapshot.data() as AlbumDbType;
+
+            return {
+              title, artists, releaseDate: releaseDate.toDate(), rating, currentlyListening
+            };
           }
-        } catch (error) {
-          console.log("Error while parsing cached values", error)
-        }
+        }))
+
+        albums = querySnapshot.docs.map(doc => ({ ...doc.data(), id: `id-${doc.id}` }))
+        albumCache.set(albums)
       }
 
-      type AlbumDbType = {
-        title: string;
-        artists: string[];
-        rating?: number;
-        releaseDate: Timestamp;
-      };
+      const sort = args.sort || "Release"
+      if (isSortBy(sort)) albums = sortAlbums(albums, sort)
 
-      const querySnapshot = await getDocs(collection(db, "albums").withConverter<Album, AlbumDbType>({
-        toFirestore: ({ title, artists, rating, releaseDate }: WithFieldValue<Album>) => {
-          return { title, artists, rating, releaseDate: Timestamp.fromDate(releaseDate as Date) };
-        },
-        fromFirestore: (snapshot) => {
-          const { title, artists, releaseDate, rating } = snapshot.data() as AlbumDbType;
-
-          return {
-            title, artists, releaseDate: releaseDate.toDate(), rating
-          };
-        }
-      }))
-
-      albums = querySnapshot.docs.map(doc => ({ ...doc.data(), id: `id-${doc.id}` }))
-
-      const cache: AlbumCache = { albums, cachedAt: now }
-      localStorage.setItem(cacheKey, JSON.stringify(cache))
+      highlighted = new Observed();
+      highlighted.addListener((element) => { scrollIntoView(element.id) });
     },
-    render: (vnode) => m(Page, vnode.attrs)
+    render: (vnode) => m(Page, { ...vnode.attrs, sort: vnode.attrs.sort || "Release" })
   },
 });
