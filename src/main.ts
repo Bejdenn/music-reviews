@@ -3,7 +3,7 @@ import { collection, getDocs, getFirestore, Timestamp, type WithFieldValue } fro
 import { initializeApp } from "firebase/app";
 
 import "./style.css"
-import { Ring, Cache, Observed } from "./utils";
+import { Cache, Observed } from "./utils";
 
 const app = initializeApp({
   apiKey: "AIzaSyAiATvIjGzb1rikJsCmJyoz_GxzVaDUkZY",
@@ -58,8 +58,8 @@ function Stars(n: number | undefined) {
 
 function MusicNote(): Component<{ id: string }> {
   return {
-    view: function ({ attrs: { id } }) {
-      return m("span", ring.get().id === id ? { class: "has-text-link" } : {}, "♫")
+    view: function () {
+      return m("span", "♫")
     }
   }
 }
@@ -163,7 +163,6 @@ const Page: Component<{ sort: SortBy }> = {
                   onchange: (e: Event) => {
                     const sort = (e.target as HTMLSelectElement).value;
                     if (isSortBy(sort)) albums = sortAlbums(albums, sort);
-                    ring.reset(albums.filter(alb => alb.currentlyListening));
 
                     m.route.set('/music', { sort });
                   }, value: sort
@@ -201,25 +200,12 @@ const Page: Component<{ sort: SortBy }> = {
         ) :
           albums.map((alb) => m(AlbumCard, alb))
       ]),
-      m(".buttons.has-addons", { style: { position: "fixed", bottom: "1rem", right: "1rem", "z-index": "10", boxShadow: "0px 2px 6px 0px rgba(0, 0, 0, 0.3), 0px 8px 16px 0px rgba(0, 0, 0, 0.5)" } },
-        m("button.button.is-light", { onclick: () => ring.prev() },
-          m("span.icon",
-            m("i.fa-solid.fa-angle-up")
-          ),
-        ),
-        m("button.button.is-light", { onclick: () => ring.next() },
-          m("span.icon",
-            m("i.fa-solid.fa-angle-down")
-          ),
-        )
-      ),
     );
   }
 
 };
 
 let albums: Album[];
-let ring: Ring<Album>;
 let highlighted: Observed<Album>;
 
 m.route(document.body, "/music", {
@@ -268,9 +254,6 @@ m.route(document.body, "/music", {
 
       const sort = args.sort || "Release"
       if (isSortBy(sort)) albums = sortAlbums(albums, sort)
-
-      ring = new Ring(albums.filter(alb => alb.currentlyListening));
-      ring.addListener((element) => { scrollIntoView(element.id) });
 
       highlighted = new Observed();
       highlighted.addListener((element) => { scrollIntoView(element.id) });
