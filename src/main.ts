@@ -41,7 +41,7 @@ const sortByDate: compareFn = (a, b) => {
 }
 
 const sortByRating: compareFn = (a, b) => {
-  return (b.rating || 0) - (a.rating || 0);
+  return (b.rating ?? 0) - (a.rating ?? 0);
 }
 
 const sortByCurrentlyListening: compareFn = (a, b) => {
@@ -172,24 +172,6 @@ const Page: Component<{ sort: SortBy }> = {
                 ]))
             ]),
           ),
-          m(".column .is-narrow",
-            m(".buttons .has-addons",
-              m("button.button.is-light", {
-                onclick: function () {
-                  const id = albums.filter(album => !album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
-                  const album = albums.find(album => album.id === id);
-                  if (!album) return;
-
-                  highlighted.set(album)
-                }
-              }, [
-                m("span.icon",
-                  m("i.fa-duotone.fa-solid.fa-shuffle")
-                ),
-              ]
-              )
-            )
-          )
         ),
         !isMobile ? m(".table-container",
           m("table.table.is-striped",
@@ -200,6 +182,20 @@ const Page: Component<{ sort: SortBy }> = {
         ) :
           albums.map((alb) => m(AlbumCard, alb))
       ]),
+      m("button.button.is-light", {
+        style: { position: "fixed", bottom: "1rem", right: "1rem", "z-index": "10", boxShadow: "0px 2px 6px 0px rgba(0, 0, 0, 0.3), 0px 8px 16px 0px rgba(0, 0, 0, 0.5)" },
+        onclick: function () {
+          const id = albums.filter(album => !album.rating).map(album => album.id)[Math.floor(Math.random() * albums.length)];
+          const album = albums.find(album => album.id === id);
+          if (!album) return;
+
+          highlighted.set(album)
+        }
+      }, [
+        m("span.icon",
+          m("i.fa-duotone.fa-solid.fa-shuffle")
+        ),
+      ])
     );
   }
 
@@ -252,12 +248,12 @@ m.route(document.body, "/music", {
         albumCache.set(albums)
       }
 
-      const sort = args.sort || "Release"
+      const sort = args.sort ?? "Release"
       if (isSortBy(sort)) albums = sortAlbums(albums, sort)
 
       highlighted = new Observed();
       highlighted.addListener((element) => { scrollIntoView(element.id) });
     },
-    render: (vnode) => m(Page, { ...vnode.attrs, sort: vnode.attrs.sort || "Release" })
+    render: (vnode) => m(Page, { ...vnode.attrs, sort: vnode.attrs.sort ?? "Release" })
   },
 });
