@@ -41,7 +41,7 @@ const sortByDate: compareFn = (a, b) => {
 }
 
 const sortByRating: compareFn = (a, b) => {
-  return (b.rating || 0) - (a.rating || 0);
+  return (b.rating ?? 0) - (a.rating ?? 0);
 }
 
 const sortByCurrentlyListening: compareFn = (a, b) => {
@@ -252,12 +252,12 @@ m.route(document.body, "/music", {
         albumCache.set(albums)
       }
 
-      const sort = args.sort || "Release"
+      const sort = args.sort ?? "Release"
       if (isSortBy(sort)) albums = sortAlbums(albums, sort)
 
       highlighted = new Observed();
       highlighted.addListener((element) => { scrollIntoView(element.id) });
     },
-    render: (vnode) => m(Page, { ...vnode.attrs, sort: vnode.attrs.sort || "Release" })
+    render: (vnode) => m(Page, { ...vnode.attrs, sort: vnode.attrs.sort ?? "Release" })
   },
 });
