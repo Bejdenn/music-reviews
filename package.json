@@ -25,7 +25,9 @@
     }
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.17",
     "firebase": "^12.5.0",
-    "mithril": "^2.3.7"
+    "mithril": "^2.3.7",
+    "tailwindcss": "^4.1.17"
   }
 }
